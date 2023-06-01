@@ -429,8 +429,9 @@ class RetrofitGenerator extends GeneratorForAnnotation<retrofit.RestApi> {
         const Code('$_localHeadersVar.removeWhere((k, v) => v == null);'),
       );
     }
-
-    _generateRequestBody(blocks, _localDataVar, m);
+    if (refer(_localDataVar) != null) {
+      _generateRequestBody(blocks, _localDataVar, m);
+    }
 
     final extraOptions = {
       'method': literal(httpMethod.peek('method')?.stringValue),
@@ -478,7 +479,10 @@ class RetrofitGenerator extends GeneratorForAnnotation<retrofit.RestApi> {
     final namedArguments = <String, Expression>{};
     namedArguments[_queryParamsVar] = refer(_queryParamsVar);
     namedArguments[_path] = path;
-    namedArguments[_dataVar] = refer(_localDataVar);
+
+    if (refer(_localDataVar) != null) {
+      namedArguments[_dataVar] = refer(_localDataVar);
+    }
 
     final cancelToken = _getAnnotation(m, retrofit.CancelRequest);
     if (cancelToken != null) {
@@ -1110,6 +1114,12 @@ You should create a new class to encapsulate the response.
         _queryParamsVar: queryParams,
         _dataVar: dataVar
       };
+
+      final noBody = _getMethodAnnotationByType(m, retrofit.NoBody);
+      if (noBody != null) {
+        composeArguments.remove(_dataVar);
+      }
+
       if (cancelToken != null) {
         composeArguments[_cancelToken] = cancelToken;
       }
@@ -1367,11 +1377,9 @@ if (T != dynamic &&
   ) {
     final noBody = _getMethodAnnotationByType(m, retrofit.NoBody);
     if (noBody != null) {
-      blocks.add(
-        declareFinal(dataVar, type: refer('String?'))
-            .assign(refer('null'))
-            .statement,
-      );
+      // blocks.add(
+      //   declareFinal(dataVar).assign(refer('<String, dynamic>{}')).statement,
+      // );
       return;
     }
 
@@ -1881,7 +1889,7 @@ ${bodyName.displayName} == null
       );
     } else {
       blocks.add(
-        declareFinal(dataVar, type: refer('Map<String, dynamic>?'))
+        declareConst(dataVar, type: refer('Map<String, dynamic>?'))
             .assign(literalNull)
             .statement,
       );
